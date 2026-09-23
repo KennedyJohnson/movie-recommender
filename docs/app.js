@@ -1,6 +1,6 @@
 const API = ["localhost", "127.0.0.1"].includes(location.hostname)
   ? "http://localhost:8000"
-  : "https://movie-recommender-api.onrender.com"; // set to the deployed API URL
+  : "https://movie-recommender-api-62te.onrender.com";
 const POSTER = "https://image.tmdb.org/t/p/w342";
 const MIN_RATINGS = 5;
 const GENRES = ["Action", "Adventure", "Animation", "Children", "Comedy", "Crime", "Documentary",
