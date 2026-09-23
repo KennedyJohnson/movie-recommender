@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Movie Recommender</title>
+  <meta name="description" content="Rate a few movies and get personalized recommendations from a matrix factorization model trained on 33M MovieLens ratings.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap top-inner">
+      <h1>Movie Recommender</h1>
+      <nav>
+        <button class="tab active" data-view="rate">Rate</button>
+        <button class="tab" data-view="recs">For you <span id="rated-count" class="pill">0</span></button>
+        <button class="tab" data-view="methods">Methods</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section id="view-rate">
+      <p class="lede">Rate at least <strong>5 movies</strong> you've seen. The model solves for your taste
+        profile on the fly and ranks over 12,000 movies for you.</p>
+      <div class="controls">
+        <input id="search" type="search" placeholder="Search for a movie…" autocomplete="off">
+        <select id="genre-filter" aria-label="Filter by genre"><option value="">All genres</option></select>
+      </div>
+      <div id="rate-grid" class="grid"></div>
+      <button id="more" class="ghost">Show more</button>
+    </section>
+
+    <section id="view-recs" hidden>
+      <div class="controls">
+        <select id="rec-genre" aria-label="Filter recommendations by genre"><option value="">All genres</option></select>
+        <button id="reset" class="ghost">Clear my ratings</button>
+      </div>
+      <p id="recs-status" class="lede"></p>
+      <ol id="rec-grid" class="grid ranked"></ol>
+    </section>
+
+    <section id="view-methods" class="prose" hidden>
+      <h2>Methods</h2>
+
+      <h3>Where this started</h3>
+      <p>This app builds on my senior capstone, <a href="https://github.com/KennedyJohnson/DSCI-4093">DSCI 4093</a>,
+        which benchmarked eight recommender algorithms on the MovieLens 32M dataset: user- and item-based
+        collaborative filtering, popularity, random, LIBMF, SVD, SVDF and ALS. They were compared on sparse,
+        moderate and dense samples of users. The main result was that only the matrix factorization models
+        <strong>SVDF</strong> (Funk SVD) and <strong>PMF</strong> consistently beat the popularity baseline
+        at every data size. Collaborative filtering needed dense rating data to compete at all.</p>
+
+      <h3>Re-running the comparison on fresh data</h3>
+      <p>For this app I pulled the latest MovieLens release: 33.8 million ratings. I kept movies with 20 or more
+        ratings and users with 20 or more ratings, which left 204,263 users and 23,426 movies. A random 20% of
+        each user's ratings was held out for testing. I reimplemented the models in Python and compared them on
+        two different questions.</p>
+      <ol>
+        <li><strong>How well does it predict the star rating you'd give one movie?</strong> This is measured
+          with RMSE, the error in stars, where lower is better. It's the question my capstone asked.</li>
+        <li><strong>How good is the top-10 list it recommends?</strong> This is measured with precision, recall
+          and nDCG at 10, where higher is better. A test movie counts as a hit if you rated it 4 stars or more.
+          nDCG also rewards placing hits near the top of the list.</li>
+      </ol>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Model</th><th>RMSE ↓</th><th>Precision@10</th><th>Recall@10</th><th>nDCG@10</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Popularity baseline</td><td>n/a</td><td>0.122</td><td>0.100</td><td>0.157</td></tr>
+            <tr><td>User + movie bias baseline</td><td>0.856</td><td>0.001</td><td>0.001</td><td>0.002</td></tr>
+            <tr class="win-rmse"><td>SVDF (Funk SVD)</td><td><strong>0.767</strong></td><td>0.043</td><td>0.031</td><td>0.055</td></tr>
+            <tr><td>PMF</td><td>0.797</td><td>0.037</td><td>0.028</td><td>0.045</td></tr>
+            <tr class="win-rank"><td>Implicit ALS</td><td>n/a</td><td><strong>0.227</strong></td><td><strong>0.225</strong></td><td><strong>0.302</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>What the numbers say</h3>
+      <p><strong>SVDF is still the best at predicting a single rating.</strong> With an RMSE of 0.767 it beats
+        PMF and the bias baseline, which matches my capstone's finding on the new data.</p>
+      <p><strong>Implicit ALS is by far the best at building a ranked list.</strong> Its nDCG@10 of 0.302 is
+        more than 5 times SVDF's and nearly double the popularity baseline. SVDF learns to predict the ratings
+        people chose to give, but most movies are never rated at all. When SVDF ranks the whole catalog, it
+        rewards obscure movies that a handful of fans rated highly. Implicit ALS (Hu, Koren &amp; Volinsky, 2008)
+        models <em>whether</em> someone watched and rated a movie at all. It treats every unrated movie as weak
+        negative evidence, which is exactly what a "what should I watch next" list needs.</p>
+      <p>Because this site shows a ranked list, it uses <strong>Implicit ALS</strong>. SVDF remains the right
+        tool when the goal is to predict how many stars someone would give a movie.</p>
+
+      <h3>How your recommendations are made</h3>
+      <p>The model was trained offline on all 32 million filtered ratings. It learned a 64-number "taste
+        vector" for every movie. You aren't in the training data, so when you rate movies the server holds the
+        movie vectors fixed and solves a small least-squares problem for <em>your</em> vector, using the movies
+        you rated 4 stars or more. Every movie is then scored by how well it matches your vector, and the
+        movies you've already rated are skipped. The whole process takes a few milliseconds. The site shows
+        the 12,087 movies that have at least 100 ratings and a poster on TMDB.</p>
+
+      <p class="sub">Full code, evaluation scripts and results:
+        <a href="https://github.com/KennedyJohnson/movie-recommender">github.com/KennedyJohnson/movie-recommender</a></p>
+    </section>
+  </main>
+
+  <div id="bar" class="bar" hidden>
+    <span id="bar-text"></span>
+    <button id="go" class="primary">Get recommendations</button>
+  </div>
+
+  <dialog id="similar">
+    <div class="dialog-head">
+      <h2 id="similar-title"></h2>
+      <button class="ghost" id="close-similar" aria-label="Close">✕</button>
+    </div>
+    <div id="similar-grid" class="grid small"></div>
+  </dialog>
+
+  <footer class="wrap foot">
+    <div class="credit">
+      <a href="https://www.themoviedb.org/" aria-label="The Movie Database (TMDB)">
+        <img class="tmdb-logo" src="tmdb-logo.svg" alt="TMDB logo">
+      </a>
+      <p>Movie posters are provided by <a href="https://www.themoviedb.org/">TMDB</a>.
+        This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+    </div>
+    <p>Recommendations are learned from the <a href="https://grouplens.org/datasets/movielens/">MovieLens</a>
+      dataset, provided by <a href="https://grouplens.org/">GroupLens Research</a> at the University of Minnesota.
+      This site is a non-commercial project and is not endorsed by the University of Minnesota or GroupLens Research.</p>
+    <p class="cite">F. Maxwell Harper and Joseph A. Konstan. 2015. The MovieLens Datasets: History and Context.
+      <em>ACM Transactions on Interactive Intelligent Systems</em> 5, 4, Article 19 (December 2015), 19 pages.
+      <a href="https://doi.org/10.1145/2827872">https://doi.org/10.1145/2827872</a></p>
+    <p>Built by <a href="https://kennedyjohnson.github.io/">Kennedy Johnson</a> ·
+      <a href="https://github.com/KennedyJohnson/movie-recommender">Source code and model comparison</a></p>
+  </footer>
+  <script src="app.js"></script>
+</body>
+</html>

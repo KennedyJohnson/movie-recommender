@@ -1,0 +1,7 @@
+# training + evaluation
+numpy
+pandas
+pyarrow
+scipy
+numba
+requests

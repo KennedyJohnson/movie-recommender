@@ -1,0 +1,52 @@
+{
+  "meta": {
+    "dataset": "ml-latest",
+    "users": 204263,
+    "movies": 23426,
+    "train_ratings": 25772559,
+    "test_ratings": 6445885
+  },
+  "models": {
+    "Popularity": {
+      "train_seconds": 0.1,
+      "precision@10": 0.121825,
+      "recall@10": 0.10034977810075409,
+      "ndcg@10": 0.15655649346064282,
+      "catalog_coverage": 0.003329633740288568
+    },
+    "Bias baseline": {
+      "train_seconds": 43.8,
+      "rmse": 0.8559825420379639,
+      "mae": 0.6507750153541565,
+      "precision@10": 0.001185,
+      "recall@10": 0.00048058368078336466,
+      "ndcg@10": 0.0016569969265065759,
+      "catalog_coverage": 0.0009391274652095962
+    },
+    "SVDF (Funk SVD)": {
+      "train_seconds": 183.8,
+      "rmse": 0.7667245268821716,
+      "mae": 0.5777669548988342,
+      "precision@10": 0.04305,
+      "recall@10": 0.03094253219665606,
+      "ndcg@10": 0.05511243852824625,
+      "catalog_coverage": 0.12942883975070435
+    },
+    "PMF": {
+      "train_seconds": 173.3,
+      "rmse": 0.7964920401573181,
+      "mae": 0.6046501994132996,
+      "precision@10": 0.036485000000000004,
+      "recall@10": 0.02839475368788037,
+      "ndcg@10": 0.045004472219530585,
+      "catalog_coverage": 0.19777170665072996
+    },
+    "Implicit ALS": {
+      "train_seconds": 204.1,
+      "precision@10": 0.22653500000000004,
+      "recall@10": 0.22524888212117486,
+      "ndcg@10": 0.3015336401002541,
+      "catalog_coverage": 0.11504311448817553
+    }
+  }
+}
