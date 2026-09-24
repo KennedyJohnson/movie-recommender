@@ -87,8 +87,9 @@
       <h3>What the numbers say</h3>
       <p><strong>SVDF is still the best at predicting a single rating.</strong> With an RMSE of 0.767 it beats
         PMF and the bias baseline, which matches my capstone's finding on the new data.</p>
-      <p><strong>Implicit ALS is by far the best at building a ranked list.</strong> Its nDCG@10 of 0.302 is
-        more than 5 times SVDF's and nearly double the popularity baseline. SVDF learns to predict the ratings
+      <p><strong>Implicit-feedback models are far better at building a ranked list.</strong> Even untuned
+        Implicit ALS scores an nDCG@10 of 0.302, more than 5 times SVDF's and nearly double the popularity
+        baseline. SVDF learns to predict the ratings
         people chose to give, but most movies are never rated at all. When SVDF ranks the whole catalog, it
         rewards obscure movies that a handful of fans rated highly. Implicit ALS (Hu, Koren &amp; Volinsky, 2008)
         models <em>whether</em> someone watched and rated a movie at all. It treats every unrated movie as weak
