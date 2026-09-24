@@ -15,12 +15,34 @@ const store = {
 let ratings = store.load(); // movieId -> rating
 let offset = 0;
 
-async function api(path, body) {
-  const res = await fetch(API + path, body
+// The free Render instance sleeps when idle; retry while it wakes up (~1 min).
+async function api(path, body, tries = 8) {
+  const opts = body
     ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }
-    : undefined);
-  if (!res.ok) throw new Error(`API ${res.status}`);
-  return res.json();
+    : undefined;
+  for (let i = 1; ; i++) {
+    // Render often holds the request open while waking rather than failing fast.
+    const slow = setTimeout(() => setStatus("Waking up the server (free hosting sleeps when idle)… this can take up to a minute."), 3000);
+    try {
+      const res = await fetch(API + path, opts).finally(() => clearTimeout(slow));
+      if (res.ok) { setStatus(""); return res.json(); }
+      if (res.status < 500 || i >= tries) throw new Error(`API ${res.status}`);
+    } catch (e) {
+      if (i >= tries || e.message.startsWith("API 4")) { setStatus("Couldn't reach the server. Try refreshing in a minute."); throw e; }
+    }
+    setStatus("Waking up the server (free hosting sleeps when idle)… this can take up to a minute.");
+    await new Promise((r) => setTimeout(r, 5000));
+  }
+}
+
+function setStatus(msg) {
+  let node = $("api-status");
+  if (!node) {
+    node = el("p", { id: "api-status", role: "status", class: "sub" });
+    $("rate-grid").before(node);
+  }
+  node.textContent = msg;
+  node.hidden = !msg;
 }
 
 function el(tag, attrs = {}, ...children) {
