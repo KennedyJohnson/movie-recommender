@@ -10,7 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from recsys import data, metrics
-from recsys.models import PMF, BiasBaseline, FunkSVD, ImplicitALS, Popularity
+from recsys.models import BPR, EASE, PMF, BiasBaseline, FunkSVD, ImplicitALS, Popularity
 
 RESULTS = Path(__file__).resolve().parents[1] / "results"
 
@@ -20,6 +20,11 @@ MODELS = {
     "SVDF (Funk SVD)": (FunkSVD, dict(factors=64, epochs=20, lr=0.005, reg=0.02)),
     "PMF": (PMF, dict(factors=64, epochs=20, lr=0.005, reg=0.05)),
     "Implicit ALS": (ImplicitALS, dict(factors=64, iterations=15, reg=0.1, alpha=10.0)),
+    # settings from scripts/tune.py (validation split); see results/tuning.md
+    "Implicit ALS (tuned)": (ImplicitALS, dict(factors=64, iterations=15, reg=5.0, alpha=10.0,
+                                               min_rating=3.0, graded=True, pop_beta=0.25)),
+    "EASE": (EASE, dict(reg=1000.0, min_rating=3.5)),
+    "BPR": (BPR, dict(factors=64, epochs=30)),
 }
 
 

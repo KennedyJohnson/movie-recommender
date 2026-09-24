@@ -15,7 +15,7 @@
       "catalog_coverage": 0.003329633740288568
     },
     "Bias baseline": {
-      "train_seconds": 43.8,
+      "train_seconds": 43.0,
       "rmse": 0.8559825420379639,
       "mae": 0.6507750153541565,
       "precision@10": 0.001185,
@@ -24,7 +24,7 @@
       "catalog_coverage": 0.0009391274652095962
     },
     "SVDF (Funk SVD)": {
-      "train_seconds": 183.8,
+      "train_seconds": 153.4,
       "rmse": 0.7667245268821716,
       "mae": 0.5777669548988342,
       "precision@10": 0.04305,
@@ -33,7 +33,7 @@
       "catalog_coverage": 0.12942883975070435
     },
     "PMF": {
-      "train_seconds": 173.3,
+      "train_seconds": 150.7,
       "rmse": 0.7964920401573181,
       "mae": 0.6046501994132996,
       "precision@10": 0.036485000000000004,
@@ -42,11 +42,32 @@
       "catalog_coverage": 0.19777170665072996
     },
     "Implicit ALS": {
-      "train_seconds": 204.1,
+      "train_seconds": 153.5,
       "precision@10": 0.22653500000000004,
       "recall@10": 0.22524888212117486,
       "ndcg@10": 0.3015336401002541,
       "catalog_coverage": 0.11504311448817553
+    },
+    "Implicit ALS (tuned)": {
+      "train_seconds": 138.5,
+      "precision@10": 0.27116,
+      "recall@10": 0.2553342367249234,
+      "ndcg@10": 0.3633348490642182,
+      "catalog_coverage": 0.09856569623495262
+    },
+    "EASE": {
+      "train_seconds": 41.6,
+      "precision@10": 0.306005,
+      "recall@10": 0.2763011225648258,
+      "ndcg@10": 0.4079039467040635,
+      "catalog_coverage": 0.09438231025356442
+    },
+    "BPR": {
+      "train_seconds": 127.8,
+      "precision@10": 0.171875,
+      "recall@10": 0.1601625373814799,
+      "ndcg@10": 0.22046321175534517,
+      "catalog_coverage": 0.16806112866046274
     }
   }
 }

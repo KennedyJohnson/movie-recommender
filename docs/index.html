@@ -76,7 +76,10 @@
             <tr><td>User + movie bias baseline</td><td>0.856</td><td>0.001</td><td>0.001</td><td>0.002</td></tr>
             <tr class="win-rmse"><td>SVDF (Funk SVD)</td><td><strong>0.767</strong></td><td>0.043</td><td>0.031</td><td>0.055</td></tr>
             <tr><td>PMF</td><td>0.797</td><td>0.037</td><td>0.028</td><td>0.045</td></tr>
-            <tr class="win-rank"><td>Implicit ALS</td><td>n/a</td><td><strong>0.227</strong></td><td><strong>0.225</strong></td><td><strong>0.302</strong></td></tr>
+            <tr><td>Implicit ALS (default settings)</td><td>n/a</td><td>0.227</td><td>0.225</td><td>0.302</td></tr>
+            <tr><td>Implicit ALS (tuned)</td><td>n/a</td><td>0.271</td><td>0.255</td><td>0.363</td></tr>
+            <tr class="win-rank"><td>EASE &mdash; used on this site</td><td>n/a</td><td><strong>0.306</strong></td><td><strong>0.276</strong></td><td><strong>0.408</strong></td></tr>
+            <tr><td>BPR</td><td>n/a</td><td>0.172</td><td>0.160</td><td>0.221</td></tr>
           </tbody>
         </table>
       </div>
@@ -90,15 +93,21 @@
         rewards obscure movies that a handful of fans rated highly. Implicit ALS (Hu, Koren &amp; Volinsky, 2008)
         models <em>whether</em> someone watched and rated a movie at all. It treats every unrated movie as weak
         negative evidence, which is exactly what a "what should I watch next" list needs.</p>
-      <p>Because this site shows a ranked list, it uses <strong>Implicit ALS</strong>. SVDF remains the right
-        tool when the goal is to predict how many stars someone would give a movie.</p>
+      <p><strong>Tuning made ALS 20% better.</strong> The tuned version ignores ratings below 3 stars, trusts
+        5-star ratings more than 3-star ones, and slightly down-weights blockbusters. I picked these settings on
+        a separate validation split, so the test scores above stay honest.</p>
+      <p><strong>EASE scored highest of all, so this site uses it.</strong> EASE (Steck, 2019) skips taste
+        vectors. It learns one weight for every pair of movies: how much liking movie A predicts liking movie B.
+        Those weights have an exact formula, so training is a single matrix inversion. The full table is
+        576&nbsp;MB, too big for free hosting, so the site keeps only each movie's 200 strongest weights. That
+        cuts it to 19&nbsp;MB while still scoring 0.393, well ahead of tuned ALS.</p>
+      <p>SVDF remains the right tool when the goal is to predict how many stars someone would give a movie.</p>
 
       <h3>How your recommendations are made</h3>
-      <p>The model was trained offline on all 32 million filtered ratings. It learned a 64-number "taste
-        vector" for every movie. You aren't in the training data, so when you rate movies the server holds the
-        movie vectors fixed and solves a small least-squares problem for <em>your</em> vector, using the movies
-        you rated 4 stars or more. Every movie is then scored by how well it matches your vector, and the
-        movies you've already rated are skipped. The whole process takes a few milliseconds. The site shows
+      <p>The model was trained offline on all 32 million filtered ratings. When you rate movies, every movie
+        you gave 3.5 stars or more "votes" for the movies it predicts, using its learned weights. The votes are
+        added up, movies you've already rated are skipped, and the highest totals are shown. It takes well
+        under a millisecond. The site shows
         the 12,087 movies that have at least 100 ratings and a poster on TMDB.</p>
 
       <p class="sub">Full code, evaluation scripts and results:

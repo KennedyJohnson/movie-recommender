@@ -14,12 +14,14 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from recsys import data
-from recsys.models import PMF, FunkSVD, ImplicitALS
+from recsys.models import EASE, PMF, FunkSVD, ImplicitALS
 from scripts.evaluate import MODELS
 
 OUT = Path(__file__).resolve().parents[1] / "api" / "artifacts"
 POSTERS = data.DATA / "posters.json"  # from scripts/fetch_posters.py
-KINDS = {"svdf": (FunkSVD, "SVDF (Funk SVD)"), "pmf": (PMF, "PMF"), "als": (ImplicitALS, "Implicit ALS")}
+KINDS = {"svdf": (FunkSVD, "SVDF (Funk SVD)"), "pmf": (PMF, "PMF"), "als": (ImplicitALS, "Implicit ALS (tuned)"),
+         "ease": (EASE, "EASE")}
+EASE_TOPK = 200  # neighbours kept per movie: ~19 MB instead of 576 MB, nDCG@10 0.408 -> 0.393
 
 
 def readable_title(title):
@@ -34,6 +36,8 @@ def main(kind="svdf", name="ml-latest", min_ratings="100"):
     r = data.load(name)
     print(f"Training {label} on {len(r.ratings):,} ratings")
     params = MODELS[label][1]
+    if kind == "ease":
+        params = {**params, "topk": EASE_TOPK}
     model = cls(**params).fit(r.users, r.items, r.ratings, r.n_users, r.n_items)
 
     counts = np.bincount(r.items, minlength=r.n_items)
@@ -48,14 +52,30 @@ def main(kind="svdf", name="ml-latest", min_ratings="100"):
     print(f"{(counts >= int(min_ratings)).sum() - len(keep)} movies dropped for missing posters")
 
     OUT.mkdir(parents=True, exist_ok=True)
+    extra = {}
+    if kind == "ease":
+        # re-index the pruned weights from EASE's own item columns onto the exported movies
+        pos = np.full(r.n_items, -1)
+        pos[keep] = np.arange(len(keep))
+        B = model.B.tocoo()
+        rows, cols = pos[model.cols[B.row]], pos[model.cols[B.col]]
+        m = (rows >= 0) & (cols >= 0)
+        order = np.lexsort((cols[m], rows[m]))
+        rows, cols, vals = rows[m][order], cols[m][order], B.data[m][order]
+        extra = dict(B_data=vals.astype(np.float32), B_indices=cols.astype(np.int32),
+                     B_indptr=np.searchsorted(rows, np.arange(len(keep) + 1)).astype(np.int64))
+
     np.savez_compressed(
         OUT / "model.npz",
         kind=kind,
-        Q=model.Q[keep].astype(np.float32),
+        **extra,
+        Q=(model.Q[keep] if hasattr(model, "Q") else np.zeros((len(keep), 0))).astype(np.float32),
         bi=(model.bi[keep] if hasattr(model, "bi") else np.zeros(len(keep))).astype(np.float32),
         mu=np.float32(getattr(model, "mu", 0.0)),
         reg=np.float32(params.get("reg", 0.1)),
         alpha=np.float32(params.get("alpha", 0.0)),
+        min_rating=np.float32(params.get("min_rating") or 3.5),
+        graded=bool(params.get("graded", False)),
     )
 
     movies = []

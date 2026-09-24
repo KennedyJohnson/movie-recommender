@@ -18,8 +18,13 @@ class Recommender:
         self.kind = str(m["kind"])
         self.Q, self.bi = m["Q"], m["bi"]
         self.mu, self.reg, self.alpha = float(m["mu"]), float(m["reg"]), float(m["alpha"])
+        # older artifacts predate graded ALS confidence: "liked" = 3.5+ stars, all weighted equally
+        self.min_rating = float(m["min_rating"]) if "min_rating" in m else 3.5
+        self.graded = bool(m["graded"]) if "graded" in m else False
         self.movies = json.loads((artifacts / "movies.json").read_text(encoding="utf-8"))
         self.index = {mv["id"]: i for i, mv in enumerate(self.movies)}
+        if self.kind == "ease":  # pruned item-item weights as CSR arrays: row i = what movie i votes for
+            self.B_data, self.B_indices, self.B_indptr = m["B_data"], m["B_indices"], m["B_indptr"]
         self.QtQ = self.Q.T @ self.Q
         norms = np.linalg.norm(self.Q, axis=1, keepdims=True)
         self.Q_unit = self.Q / np.maximum(norms, 1e-8)
@@ -28,13 +33,15 @@ class Recommender:
         Q = self.Q[idx]
         k = Q.shape[1]
         if self.kind == "als":
-            # Hu et al. closed form with only this user's liked movies as positives
-            liked = ratings >= 3.5
+            # Hu et al. closed form; weights mirror recsys.models.als_weights
+            lo = self.min_rating
+            w = (ratings - lo + 1.0) / (6.0 - lo) if self.graded else np.ones(len(ratings))
+            liked = ratings >= lo
             if not liked.any():
                 return None, 0.0
-            Ql = Q[liked]
-            A = self.QtQ + self.alpha * Ql.T @ Ql + self.reg * np.eye(k)
-            return np.linalg.solve(A, (1 + self.alpha) * Ql.sum(0)), 0.0
+            Ql, c = Q[liked], 1.0 + self.alpha * w[liked]
+            A = self.QtQ + (Ql.T * (c - 1.0)) @ Ql + self.reg * np.eye(k)
+            return np.linalg.solve(A, Ql.T @ c), 0.0
 
         # explicit: fit [user bias, user factors] to residuals r - mu - b_i
         target = ratings - self.mu - self.bi[idx]
@@ -50,11 +57,16 @@ class Recommender:
             return self.popular(n, genre)
         idx = np.array([i for i, _ in known])
         ratings = np.array([r for _, r in known], np.float32)
-        pu, bu = self._user_vector(idx, ratings)
-        if pu is None:  # nothing liked yet, so there's no taste signal to rank by
-            return []
-
-        scores = self.Q @ pu + self.bi
+        if self.kind == "ease":
+            liked = idx[ratings >= self.min_rating]
+            if not len(liked):
+                return []
+            scores, bu = self._ease_rows(liked), 0.0
+        else:
+            pu, bu = self._user_vector(idx, ratings)
+            if pu is None:  # nothing liked yet, so there's no taste signal to rank by
+                return []
+            scores = self.Q @ pu + self.bi
         scores[idx] = -np.inf
         if genre:
             scores[[genre not in mv["genres"] for mv in self.movies]] = -np.inf
@@ -69,9 +81,16 @@ class Recommender:
             out.append(item)
         return out
 
+    def _ease_rows(self, rows):
+        """EASE score = sum of the liked movies' weight rows (x_u @ B with binary x_u)."""
+        sl = [slice(self.B_indptr[i], self.B_indptr[i + 1]) for i in rows]
+        cols = np.concatenate([self.B_indices[s] for s in sl])
+        vals = np.concatenate([self.B_data[s] for s in sl])
+        return np.bincount(cols, weights=vals, minlength=len(self.movies))
+
     def similar(self, movie_id: int, n=12):
         i = self.index[movie_id]
-        sims = self.Q_unit @ self.Q_unit[i]
+        sims = self._ease_rows([i]) if self.kind == "ease" else self.Q_unit @ self.Q_unit[i]
         sims[i] = -np.inf
         return [dict(self.movies[j], similarity=round(float(sims[j]), 3))
                 for j in np.argsort(-sims)[:n]]
