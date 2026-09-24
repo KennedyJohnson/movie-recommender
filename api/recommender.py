@@ -76,7 +76,8 @@ class Recommender:
             if not np.isfinite(scores[i]):
                 break
             item = dict(self.movies[i])
-            if self.kind != "als":
+            # ALS/EASE scores are ranking scores, not star ratings, so only explicit models predict stars
+            if self.kind not in ("als", "ease"):
                 item["predicted"] = round(float(np.clip(self.mu + bu + scores[i], 0.5, 5.0)), 2)
             out.append(item)
         return out
