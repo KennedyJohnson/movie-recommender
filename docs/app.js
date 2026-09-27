@@ -1,6 +1,3 @@
-const API = ["localhost", "127.0.0.1"].includes(location.hostname)
-  ? "http://localhost:8000"
-  : "https://movie-recommender-api-62te.onrender.com";
 const POSTER = "https://image.tmdb.org/t/p/w342";
 const MIN_RATINGS = 5;
 const GENRES = ["Action", "Adventure", "Animation", "Children", "Comedy", "Crime", "Documentary",
@@ -14,36 +11,6 @@ const store = {
 };
 let ratings = store.load(); // movieId -> rating
 let offset = 0;
-
-// The free Render instance sleeps when idle; retry while it wakes up (~1 min).
-async function api(path, body, tries = 8) {
-  const opts = body
-    ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }
-    : undefined;
-  for (let i = 1; ; i++) {
-    // Render often holds the request open while waking rather than failing fast.
-    const slow = setTimeout(() => setStatus("Waking up the server (free hosting sleeps when idle)… this can take up to a minute."), 3000);
-    try {
-      const res = await fetch(API + path, opts).finally(() => clearTimeout(slow));
-      if (res.ok) { setStatus(""); return res.json(); }
-      if (res.status < 500 || i >= tries) throw new Error(`API ${res.status}`);
-    } catch (e) {
-      if (i >= tries || e.message.startsWith("API 4")) { setStatus("Couldn't reach the server. Try refreshing in a minute."); throw e; }
-    }
-    setStatus("Waking up the server (free hosting sleeps when idle)… this can take up to a minute.");
-    await new Promise((r) => setTimeout(r, 5000));
-  }
-}
-
-function setStatus(msg) {
-  let node = $("api-status");
-  if (!node) {
-    node = el("p", { id: "api-status", role: "status", class: "sub" });
-    $("rate-grid").before(node);
-  }
-  node.textContent = msg;
-  node.hidden = !msg;
-}
 
 function el(tag, attrs = {}, ...children) {
   const node = document.createElement(tag);
@@ -98,7 +65,7 @@ function recCard(movie, i) {
 async function loadRateGrid(reset) {
   if (reset) { offset = 0; $("rate-grid").replaceChildren(); }
   const genre = $("genre-filter").value;
-  const movies = await api(`/movies/popular?n=40&offset=${offset}${genre ? `&genre=${encodeURIComponent(genre)}` : ""}`);
+  const movies = await Rec.popular(40, genre, offset);
   offset += movies.length;
   $("rate-grid").append(...movies.map(rateCard));
   $("more").hidden = movies.length < 40;
@@ -110,7 +77,7 @@ function onSearch() {
   const q = $("search").value.trim();
   searchTimer = setTimeout(async () => {
     if (q.length < 2) return loadRateGrid(true);
-    const movies = await api(`/movies/search?q=${encodeURIComponent(q)}&n=24`);
+    const movies = await Rec.search(q, 24);
     $("rate-grid").replaceChildren(...movies.map(rateCard));
     $("more").hidden = true;
   }, 250);
@@ -134,12 +101,7 @@ async function loadRecs() {
     return;
   }
   $("recs-status").textContent = "Finding movies for you…";
-  const body = {
-    ratings: Object.entries(ratings).map(([id, r]) => ({ movie_id: +id, rating: r })),
-    n: 40,
-    genre: $("rec-genre").value || null,
-  };
-  const recs = await api("/recommend", body);
+  const recs = await Rec.recommend(ratings, 40, $("rec-genre").value || null);
   if (!recs.length) {
     $("recs-status").textContent = "Rate a few movies you liked (4 or 5 stars) so the model knows your taste.";
     $("rec-grid").replaceChildren();
@@ -153,7 +115,7 @@ async function showSimilar(movie) {
   $("similar-title").textContent = `Because you're looking at ${movie.title}`;
   $("similar-grid").replaceChildren();
   $("similar").showModal();
-  const movies = await api(`/movies/${movie.id}/similar?n=12`);
+  const movies = await Rec.similar(movie.id, 12);
   $("similar-grid").replaceChildren(...movies.map(rateCard));
 }
 
@@ -170,7 +132,7 @@ function show(view) {
 
 function fail(err) {
   console.error(err);
-  $("recs-status").textContent = "Couldn't reach the recommendation API. It may be waking up (free hosting sleeps when idle); try again in 30 seconds.";
+  $("recs-status").textContent = "Something went wrong loading recommendations. Try refreshing the page.";
 }
 
 for (const select of [$("genre-filter"), $("rec-genre")]) {
@@ -190,5 +152,5 @@ if (["recs", "methods"].includes(location.hash.slice(1))) show(location.hash.sli
 loadRateGrid(true).catch((err) => {
   console.error(err);
   $("rate-grid").replaceChildren(el("p", { class: "lede" },
-    "The recommendation API is waking up (free hosting sleeps when idle). Refresh in about 30 seconds."));
+    "Couldn't load the movie list. Try refreshing the page."));
 });

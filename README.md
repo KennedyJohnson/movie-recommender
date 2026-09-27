@@ -67,6 +67,7 @@ python scripts/download_data.py                       # ml-latest from GroupLens
 python scripts/evaluate.py                            # model comparison -> results/
 TMDB_API_KEY=... python scripts/fetch_posters.py      # poster paths from TMDB (free key)
 python scripts/export_model.py ease                   # train + export -> api/artifacts/
+python scripts/export_static.py                       # api/artifacts -> docs/data/ (browser model)
 
 cd api && uvicorn main:app --port 8000                # API
 cd docs && python -m http.server 5500                 # site at http://localhost:5500
@@ -75,7 +76,9 @@ cd docs && python -m http.server 5500                 # site at http://localhost
 ## Deployment
 
 - **Frontend:** GitHub Pages, served from `main` / `docs`.
-- **API:** Render's free tier, configured in [render.yaml](render.yaml). The free instance sleeps when idle, so the first request after a quiet spell takes about 30 seconds.
+- **Model:** runs in the browser. `scripts/export_static.py` splits EASE's item weights into small binary shards under `docs/data/ease/`, and the page fetches only the rows for movies you rated, so there's no server to wake up.
+- **API (optional):** the FastAPI service in `api/` (Render config in [render.yaml](render.yaml)) serves the same model and is kept for local development.
+- **Refresh:** `.github/workflows/refresh.yml` checks GroupLens monthly and retrains when a new ml-latest is published.
 
 ## Data and attribution
 

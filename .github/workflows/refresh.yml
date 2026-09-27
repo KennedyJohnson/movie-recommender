@@ -1,0 +1,93 @@
+name: Monthly model refresh
+
+# MovieLens ml-latest is republished irregularly. Checks monthly; retrains EASE, refreshes TMDB
+# posters and re-exports the static site model only when GroupLens publishes a new zip
+# (or on manual run with force). Every run commits a stamp, which keeps the cron alive.
+on:
+  schedule:
+    - cron: "0 9 5 * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Retrain even if MovieLens hasn't changed
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: refresh
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Has MovieLens changed?
+        id: check
+        run: |
+          modified=$(curl -sfI https://files.grouplens.org/datasets/movielens/ml-latest.zip | grep -i '^last-modified:' | cut -d' ' -f2- | tr -d '\r')
+          [ -n "$modified" ] || { echo "::error::couldn't reach GroupLens"; exit 1; }
+          echo "modified=$modified" >> "$GITHUB_OUTPUT"
+          if [ "$modified" != "$(cat docs/data/source_modified.txt 2>/dev/null)" ] || [ "${{ inputs.force }}" = "true" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-python@v5
+        if: steps.check.outputs.run == 'true'
+        with:
+          python-version: "3.12"
+          cache: pip
+      - if: steps.check.outputs.run == 'true'
+        run: pip install -r requirements.txt
+      - name: Cache TMDB poster lookups
+        if: steps.check.outputs.run == 'true'
+        uses: actions/cache@v4
+        with:
+          path: data/posters.json
+          key: posters-${{ github.run_id }}
+          restore-keys: posters-
+      - name: Retrain and export
+        if: steps.check.outputs.run == 'true'
+        env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+        run: |
+          python scripts/download_data.py
+          python scripts/fetch_posters.py
+          python scripts/export_model.py ease
+          python scripts/export_static.py
+          echo "${{ steps.check.outputs.modified }}" > docs/data/source_modified.txt
+
+      - name: Commit and rebuild Pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "{\"updated\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\", \"retrained\": ${{ steps.check.outputs.run == 'true' }}}" > docs/data/last_updated.json
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/data api/artifacts
+          git diff --staged --quiet || git commit -m "chore: monthly model refresh [automated]"
+          git push
+          # GITHUB_TOKEN pushes may not trigger a Pages build; request one explicitly.
+          gh api -X POST "repos/${{ github.repository }}/pages/builds" || true
+
+  alert-on-failure:
+    needs: refresh
+    if: failure()
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              ...context.repo,
+              title: `Model refresh failed (${new Date().toISOString().slice(0,10)})`,
+              body: `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              labels: ['stale-data'],
+            });
