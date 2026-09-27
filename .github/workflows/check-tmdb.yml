@@ -1,0 +1,13 @@
+name: Check TMDB key
+on: workflow_dispatch
+permissions: {}
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" "https://api.themoviedb.org/3/movie/278?api_key=$TMDB_API_KEY")
+          echo "TMDB responded $code"
+          [ "$code" = 200 ]
