@@ -26,7 +26,7 @@ function poster(movie) {
   return el("img", { class: "poster", src: POSTER + movie.poster, alt: `${movie.title} poster`, loading: "lazy" });
 }
 
-function starRow(movie, card) {
+function starRow(movie, card, onRate) {
   const row = el("div", { class: "stars", role: "group", "aria-label": `Rate ${movie.title}` });
   const paint = () => [...row.children].forEach((b, i) => b.classList.toggle("on", i < (ratings[movie.id] || 0)));
   for (let s = 1; s <= 5; s++) {
@@ -38,6 +38,7 @@ function starRow(movie, card) {
         card.classList.toggle("rated", movie.id in ratings);
         paint();
         updateBar();
+        if (onRate) onRate();
       },
     }, "★"));
   }
@@ -54,12 +55,20 @@ function rateCard(movie) {
   return card;
 }
 
+let recsTimer;
 function recCard(movie, i) {
-  return el("li", { class: "card" }, el("span", { class: "rank", "aria-hidden": "true" }, i + 1), poster(movie), el("div", { class: "meta" },
+  const card = el("li", { class: "card" });
+  // Rating a recommended movie removes it and re-ranks after a short pause (lets the user adjust the stars).
+  const stars = starRow(movie, card, () => { clearTimeout(recsTimer); recsTimer = setTimeout(loadRecs, 900); });
+  stars.hidden = true;
+  const seen = el("button", { class: "link", onclick: () => { stars.hidden = false; seen.hidden = true; } }, "Seen it? Rate it");
+  card.append(el("span", { class: "rank", "aria-hidden": "true" }, i + 1), poster(movie), el("div", { class: "meta" },
     el("div", { class: "title" }, movie.title),
     el("div", { class: "sub" }, [movie.year, movie.genres.slice(0, 2).join(", ")].filter(Boolean).join(" · ")),
     movie.predicted != null ? el("div", { class: "sub" }, "You'd rate it ", el("span", { class: "predicted" }, `★ ${movie.predicted.toFixed(1)}`)) : null,
+    seen, stars,
     el("button", { class: "link", onclick: () => showSimilar(movie) }, "More like this →")));
+  return card;
 }
 
 async function loadRateGrid(reset) {

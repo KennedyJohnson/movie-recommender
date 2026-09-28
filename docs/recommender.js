@@ -22,13 +22,16 @@ const Rec = (() => {
     return shards.get(s);
   }
 
-  // EASE score = sum of the given movies' weight rows
-  async function scoreRows(rows) {
+  const NEUTRAL = 3; // star rating that neither pulls similar movies up nor pushes them down
+
+  // EASE score = weighted sum of the given movies' weight rows
+  async function scoreRows(rows, weights) {
     const scores = new Float64Array(movies.length);
-    await Promise.all(rows.map(async (i) => {
+    await Promise.all(rows.map(async (i, j) => {
+      const w = weights ? weights[j] : 1;
       const sh = await shard(Math.floor(i / meta.shard));
       const r = i % meta.shard;
-      for (let k = sh.indptr[r]; k < sh.indptr[r + 1]; k++) scores[sh.indices[k]] += sh.data[k];
+      for (let k = sh.indptr[r]; k < sh.indptr[r + 1]; k++) scores[sh.indices[k]] += w * sh.data[k];
     }));
     return scores;
   }
@@ -54,9 +57,10 @@ const Rec = (() => {
       await init();
       const known = Object.entries(rated).map(([id, r]) => [index.get(+id), r]).filter(([i]) => i !== undefined);
       if (!known.length) return this.popular(n, genre, 0);
-      const liked = known.filter(([, r]) => r >= meta.min_rating).map(([i]) => i);
-      if (!liked.length) return [];
-      const scores = await scoreRows(liked);
+      if (!known.some(([, r]) => r >= meta.min_rating)) return [];
+      // weight each rated movie by (stars - 3): 5 pulls similar movies up 2x, 1 pushes them down 2x
+      const used = known.filter(([, r]) => r !== NEUTRAL);
+      const scores = await scoreRows(used.map(([i]) => i), used.map(([, r]) => r - NEUTRAL));
       for (const [i] of known) scores[i] = -Infinity;
       return top(scores, n, (i) => !genre || movies[i].genres.includes(genre)).map((i) => movies[i]);
     },

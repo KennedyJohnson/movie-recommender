@@ -12,6 +12,9 @@ import numpy as np
 ARTIFACTS = Path(__file__).resolve().parent / "artifacts"
 
 
+NEUTRAL = 3.0  # star rating that neither pulls similar movies up nor pushes them down
+
+
 class Recommender:
     def __init__(self, artifacts: Path = ARTIFACTS):
         m = np.load(artifacts / "model.npz")
@@ -58,10 +61,11 @@ class Recommender:
         idx = np.array([i for i, _ in known])
         ratings = np.array([r for _, r in known], np.float32)
         if self.kind == "ease":
-            liked = idx[ratings >= self.min_rating]
-            if not len(liked):
+            if not (ratings >= self.min_rating).any():
                 return []
-            scores, bu = self._ease_rows(liked), 0.0
+            # weight each rated movie by (stars - 3): 5 pulls similar movies up 2x, 1 pushes them down 2x
+            w = ratings - NEUTRAL
+            scores, bu = self._ease_rows(idx[w != 0], w[w != 0]), 0.0
         else:
             pu, bu = self._user_vector(idx, ratings)
             if pu is None:  # nothing liked yet, so there's no taste signal to rank by
@@ -82,11 +86,12 @@ class Recommender:
             out.append(item)
         return out
 
-    def _ease_rows(self, rows):
-        """EASE score = sum of the liked movies' weight rows (x_u @ B with binary x_u)."""
+    def _ease_rows(self, rows, weights=None):
+        """EASE score = weighted sum of the given movies' weight rows (x_u @ B)."""
         sl = [slice(self.B_indptr[i], self.B_indptr[i + 1]) for i in rows]
         cols = np.concatenate([self.B_indices[s] for s in sl])
-        vals = np.concatenate([self.B_data[s] for s in sl])
+        weights = np.ones(len(sl)) if weights is None else weights
+        vals = np.concatenate([self.B_data[s] * w for s, w in zip(sl, weights)])
         return np.bincount(cols, weights=vals, minlength=len(self.movies))
 
     def similar(self, movie_id: int, n=12):
