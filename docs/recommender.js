@@ -58,9 +58,9 @@ const Rec = (() => {
       const known = Object.entries(rated).map(([id, r]) => [index.get(+id), r]).filter(([i]) => i !== undefined);
       if (!known.length) return this.popular(n, genre, 0);
       if (!known.some(([, r]) => r >= meta.min_rating)) return [];
-      // weight each rated movie by (stars - 3): 5 pulls similar movies up 2x, 1 pushes them down 2x
+      // weight each rated movie by (stars - 3)^3: 4/2 stars nudge similar movies (+/-1), 5/1 stars move them hard (+/-8)
       const used = known.filter(([, r]) => r !== NEUTRAL);
-      const scores = await scoreRows(used.map(([i]) => i), used.map(([, r]) => r - NEUTRAL));
+      const scores = await scoreRows(used.map(([i]) => i), used.map(([, r]) => (r - NEUTRAL) ** 3));
       for (const [i] of known) scores[i] = -Infinity;
       return top(scores, n, (i) => !genre || movies[i].genres.includes(genre)).map((i) => movies[i]);
     },

@@ -63,8 +63,8 @@ class Recommender:
         if self.kind == "ease":
             if not (ratings >= self.min_rating).any():
                 return []
-            # weight each rated movie by (stars - 3): 5 pulls similar movies up 2x, 1 pushes them down 2x
-            w = ratings - NEUTRAL
+            # weight each rated movie by (stars - 3)^3: 4/2 stars nudge similar movies (+/-1), 5/1 stars move them hard (+/-8)
+            w = (ratings - NEUTRAL) ** 3
             scores, bu = self._ease_rows(idx[w != 0], w[w != 0]), 0.0
         else:
             pu, bu = self._user_vector(idx, ratings)
