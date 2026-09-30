@@ -1,0 +1,100 @@
+---
+title: "movieLens"
+author: "Kennedy Johnson"
+date: "2024-10-03"
+output: html_document
+---
+
+## Load Data
+
+```{r, message= F}
+library(recommenderlab)
+movies = read.csv("../ml-32m/movies.csv")
+ratings = read.csv("../ml-32m/ratings.csv")
+links = read.csv("../ml-32m/links.csv")
+tags = read.csv("../ml-32m/tags.csv")
+
+ratings_small = read.csv("../subsetData/ratings_small.csv")
+ratings_med = read.csv("../subsetData/ratings_medium.csv")
+ratings_large = read.csv("../subsetData/ratings_large.csv")
+ratings_small = as(ratings_small, "realRatingMatrix")
+ratings_med = as(ratings_med, "realRatingMatrix")
+ratings_large = as(ratings_large, "realRatingMatrix")
+```
+
+# Subset data to only users with many ratings
+
+```{r}
+set.seed(4093)
+ratingsMatrix = as(ratings, "realRatingMatrix")
+
+# Only consider users that have rated at least 100 movies, and movies with at least 50 ratings
+MovieLense100 <- ratingsMatrix[rowCounts(ratingsMatrix) >= 100, colCounts(ratingsMatrix) >= 50]
+
+# Sample random row indices from the matrix
+n_samples = 100
+MovieLense100Sample <- MovieLense100[sample(1:nrow(MovieLense100), n_samples, replace = FALSE),]
+MovieLense100Sample
+```
+
+# Predict 5 movies to a user example
+
+```{r}
+trainSet <- MovieLense100Sample[1:300]
+rec <- Recommender(trainSet, method = "UBCF")
+rec
+pre <- predict(rec, MovieLense100[301:302], n = 5)
+
+movies[as.integer(as(pre,"list")[1]$`0`),]["title"]
+movies[as.integer(as(pre,"list")[2]$`1`),]["title"]
+```
+
+# RMSE, MSE, MAE for ratings of various sizes
+
+```{r}
+ErrorRating = function(ratingsMatrix, algo) {
+  set.seed(4093) 
+ scheme <- evaluationScheme(ratingsMatrix, method = "cross-validation", k = 5, given = 10, goodRating = 3)
+ rec_model <- Recommender(getData(scheme, "train"), method = algo) 
+ predictions <- predict(rec_model, getData(scheme, "known"), type = "ratings")
+ accuracy <- calcPredictionAccuracy(predictions, getData(scheme, "unknown"))
+  return(accuracy)
+}
+
+datasets = c(ratings_small,ratings_med,ratings_large)
+datasetsNames = c("ratings_small","ratings_med","ratings_large")
+algos = c("UBCF","IBCF","POPULAR","RANDOM","LIBMF","SVD","SVDF","ALS")
+for (algo in algos) {
+  for (dataset in 1:3) {
+    print(paste(algo, datasetsNames[dataset], sep = ", "))
+    print(ErrorRating(datasets[[dataset]],algo))
+  }
+}
+
+```
+
+
+# Make ROC curve from various recommender methods
+
+Code Sourced from IE 5533
+
+```{r}
+# Evaluation via Cross Validation against Benchmarks with k fold validation
+set.seed(4093)
+scheme <- evaluationScheme(ratings_small,method = "cross-validation",k = 5,given = 10 ,goodRating = 3)
+
+algorithms <- list(`random items` = list(name = "RANDOM", param = NULL),
+                   `popular items` = list(name = "POPULAR", param = NULL),
+                   `user-based CF` = list(name = "UBCF", param = list(nn = 3)), # 3 closest users
+                   `item-based CF` = list(name = "IBCF",param = list(k = 100))) # 100 closest movies
+
+
+results <- evaluate(scheme,
+                    algorithms,
+                    type = "topNList",
+                    n = c(1, 3, 5, 10), # top 1,3,5,10 recommendations for movies
+                    progress = FALSE)
+
+plot(results, annotate = 2, legend = "topleft")
+plot(results, "prec/rec", annotate=3, legend="topleft")
+```
