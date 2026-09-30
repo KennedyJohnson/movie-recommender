@@ -4,7 +4,7 @@ Rate a few movies and get a ranked list of what to watch next.
 
 **Live demo:** https://kennedyjohnson.github.io/movie-recommender/
 
-This project builds on my senior capstone, DSCI 4093 ([presentation slides](https://kennedyjohnson.github.io/DSCI%204093%20Presentation.pdf)). The capstone compared eight recommender algorithms on MovieLens 32M and found that only **SVDF** (Funk SVD) and **PMF** consistently beat the popularity baseline at every data size. Here I re-run that comparison on the latest MovieLens release, add implicit-feedback ALS, and deploy the best ranking model as a web app.
+This project builds on my senior capstone, DSCI 4093 ([code and notebooks](capstone/), [presentation slides](https://kennedyjohnson.github.io/DSCI%204093%20Presentation.pdf)). The capstone compared eight recommender algorithms on MovieLens 32M and found that only **SVDF** (Funk SVD) and **PMF** consistently beat the popularity baseline at every data size. Here I re-run that comparison on the latest MovieLens release, add implicit-feedback ALS, and deploy the best ranking model as a web app.
 
 ## Results
 

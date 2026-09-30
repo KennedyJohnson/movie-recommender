@@ -3,3 +3,5 @@ __pycache__/
 /data/
 *.log
 .claude/
+capstone/ml-32m/
+capstone/subsetData/

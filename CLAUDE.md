@@ -1,6 +1,6 @@
 # Movie Recommender
 
-Rate movies → ranked recommendations. Builds on the DSCI-4093 capstone. Site: `docs/` on GitHub Pages (legacy branch build, main /docs). The deployed model is **EASE** and runs fully in the browser; the FastAPI app in `api/` is optional/local only (old Render deploy in `render.yaml`).
+Rate movies → ranked recommendations. Builds on the DSCI-4093 capstone (its notebooks/R code now live in `capstone/`; data not included). Site: `docs/` on GitHub Pages (legacy branch build, main /docs). The deployed model is **EASE** and runs fully in the browser; the FastAPI app in `api/` is optional/local only (old Render deploy in `render.yaml`).
 
 ## Layout
 - `recsys/` - `data.py` (loads `data/<name>/*.parquet`), `models.py` (Popularity, BiasBaseline, FunkSVD, PMF, ImplicitALS, BPR, EASE), `metrics.py`.
