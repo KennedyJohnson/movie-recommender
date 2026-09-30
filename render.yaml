@@ -9,6 +9,6 @@ services:
     healthCheckPath: /health
     envVars:
       - key: PYTHON_VERSION
-        value: "3.12.7"
+        value: "3.14.7"
       - key: ALLOWED_ORIGINS
         value: https://kennedyjohnson.github.io
