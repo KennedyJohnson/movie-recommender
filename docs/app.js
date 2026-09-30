@@ -65,6 +65,7 @@ function recCard(movie, i) {
   card.append(el("span", { class: "rank", "aria-hidden": "true" }, i + 1), poster(movie), el("div", { class: "meta" },
     el("div", { class: "title" }, movie.title),
     el("div", { class: "sub" }, [movie.year, movie.genres.slice(0, 2).join(", ")].filter(Boolean).join(" · ")),
+    movie.because ? el("div", { class: "sub because" }, "Because you liked ", el("em", {}, movie.because)) : null,
     movie.predicted != null ? el("div", { class: "sub" }, "You'd rate it ", el("span", { class: "predicted" }, `★ ${movie.predicted.toFixed(1)}`)) : null,
     seen, stars,
     el("button", { class: "link", onclick: () => showSimilar(movie) }, "More like this →")));

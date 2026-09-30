@@ -24,15 +24,23 @@ const Rec = (() => {
 
   const NEUTRAL = 3; // star rating that neither pulls similar movies up nor pushes them down
 
-  // EASE score = weighted sum of the given movies' weight rows
+  // EASE score = weighted sum of the given movies' weight rows.
+  // Also tracks which given movie pushed each target up the most, for "Because you liked" labels.
   async function scoreRows(rows, weights) {
     const scores = new Float64Array(movies.length);
+    const bestPush = new Float64Array(movies.length);
+    const because = new Int32Array(movies.length).fill(-1);
     await Promise.all(rows.map(async (i, j) => {
       const w = weights ? weights[j] : 1;
       const sh = await shard(Math.floor(i / meta.shard));
       const r = i % meta.shard;
-      for (let k = sh.indptr[r]; k < sh.indptr[r + 1]; k++) scores[sh.indices[k]] += w * sh.data[k];
+      for (let k = sh.indptr[r]; k < sh.indptr[r + 1]; k++) {
+        const t = sh.indices[k], push = w * sh.data[k];
+        scores[t] += push;
+        if (push > bestPush[t]) { bestPush[t] = push; because[t] = i; }
+      }
     }));
+    scores.because = because;
     return scores;
   }
 
@@ -62,7 +70,10 @@ const Rec = (() => {
       const used = known.filter(([, r]) => r !== NEUTRAL);
       const scores = await scoreRows(used.map(([i]) => i), used.map(([, r]) => (r - NEUTRAL) ** 3));
       for (const [i] of known) scores[i] = -Infinity;
-      return top(scores, n, (i) => !genre || movies[i].genres.includes(genre)).map((i) => movies[i]);
+      return top(scores, n, (i) => !genre || movies[i].genres.includes(genre)).map((i) => {
+        const b = scores.because[i];
+        return b >= 0 ? { ...movies[i], because: movies[b].title } : movies[i];
+      });
     },
     async similar(id, n) {
       await init();

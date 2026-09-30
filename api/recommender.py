@@ -65,7 +65,8 @@ class Recommender:
                 return []
             # weight each rated movie by (stars - 3)^3: 4/2 stars nudge similar movies (+/-1), 5/1 stars move them hard (+/-8)
             w = (ratings - NEUTRAL) ** 3
-            scores, bu = self._ease_rows(idx[w != 0], w[w != 0]), 0.0
+            used, uw = idx[w != 0], w[w != 0]
+            scores, bu = self._ease_rows(used, uw), 0.0
         else:
             pu, bu = self._user_vector(idx, ratings)
             if pu is None:  # nothing liked yet, so there's no taste signal to rank by
@@ -75,6 +76,7 @@ class Recommender:
         if genre:
             scores[[genre not in mv["genres"] for mv in self.movies]] = -np.inf
         top = np.argsort(-scores)[:n]
+        because = self._because(used, uw, top) if self.kind == "ease" else {}
         out = []
         for i in top:
             if not np.isfinite(scores[i]):
@@ -83,6 +85,8 @@ class Recommender:
             # ALS/EASE scores are ranking scores, not star ratings, so only explicit models predict stars
             if self.kind not in ("als", "ease"):
                 item["predicted"] = round(float(np.clip(self.mu + bu + scores[i], 0.5, 5.0)), 2)
+            if i in because:
+                item["because"] = self.movies[because[i]]["title"]
             out.append(item)
         return out
 
@@ -93,6 +97,18 @@ class Recommender:
         weights = np.ones(len(sl)) if weights is None else weights
         vals = np.concatenate([self.B_data[s] * w for s, w in zip(sl, weights)])
         return np.bincount(cols, weights=vals, minlength=len(self.movies))
+
+    def _because(self, rows, weights, targets):
+        """For each target, the rated movie whose weighted row pushed it up the most (positive pushes only)."""
+        best = {}
+        targets = set(int(t) for t in targets)
+        for r, w in zip(rows, weights):
+            s = slice(self.B_indptr[r], self.B_indptr[r + 1])
+            for t, v in zip(self.B_indices[s], self.B_data[s] * w):
+                t = int(t)
+                if t in targets and v > 0 and v > best.get(t, (0.0, -1))[0]:
+                    best[t] = (float(v), int(r))
+        return {t: r for t, (_, r) in best.items()}
 
     def similar(self, movie_id: int, n=12):
         i = self.index[movie_id]
