@@ -5,18 +5,28 @@ const Rec = (() => {
 
   async function init() {
     if (movies) return;
-    [movies, meta] = await Promise.all(["data/movies.json", "data/meta.json"].map((u) => fetch(u).then((r) => r.json())));
+    const [m, mt] = await Promise.all(["data/movies.json", "data/meta.json"].map((u) => fetch(u).then((r) => {
+      if (!r.ok) throw new Error(`${u}: HTTP ${r.status}`);
+      return r.json();
+    })));
+    [movies, meta] = [m, mt]; // only set once both loaded, so a failed load is retried
     index = new Map(movies.map((m, i) => [m.id, i]));
   }
 
   function shard(s) {
     if (!shards.has(s)) {
-      shards.set(s, fetch(`data/ease/${s}.bin`).then((r) => r.arrayBuffer()).then((buf) => {
+      shards.set(s, fetch(`data/ease/${s}.bin`).then((r) => {
+        if (!r.ok) throw new Error(`shard ${s}: HTTP ${r.status}`);
+        return r.arrayBuffer();
+      }).then((buf) => {
         const [rows, nnz] = new Int32Array(buf, 0, 2);
         const indptr = new Int32Array(buf, 8, rows + 1);
         const indices = new Int32Array(buf, 8 + 4 * (rows + 1), nnz);
         const data = new Float32Array(buf, 8 + 4 * (rows + 1 + nnz), nnz);
         return { indptr, indices, data };
+      }).catch((err) => {
+        shards.delete(s); // don't keep a failed download; the next request retries it
+        throw err;
       }));
     }
     return shards.get(s);
