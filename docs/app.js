@@ -59,7 +59,7 @@ let recsTimer;
 function recCard(movie, i) {
   const card = el("li", { class: "card" });
   // Rating a recommended movie removes it and re-ranks after a short pause (lets the user adjust the stars).
-  const stars = starRow(movie, card, () => { clearTimeout(recsTimer); recsTimer = setTimeout(loadRecs, 900); });
+  const stars = starRow(movie, card, () => { clearTimeout(recsTimer); recsTimer = setTimeout(() => loadRecs().catch(fail), 900); });
   stars.hidden = true;
   const seen = el("button", { class: "link", onclick: () => { stars.hidden = false; seen.hidden = true; } }, "Seen it? Rate it");
   card.append(el("span", { class: "rank", "aria-hidden": "true" }, i + 1), poster(movie), el("div", { class: "meta" },
@@ -86,10 +86,15 @@ function onSearch() {
   clearTimeout(searchTimer);
   const q = $("search").value.trim();
   searchTimer = setTimeout(async () => {
-    if (q.length < 2) return loadRateGrid(true);
-    const movies = await Rec.search(q, 24);
-    $("rate-grid").replaceChildren(...movies.map(rateCard));
-    $("more").hidden = true;
+    try {
+      if (q.length < 2) return await loadRateGrid(true);
+      const movies = await Rec.search(q, 24);
+      if ($("search").value.trim() !== q) return; // the user kept typing
+      $("rate-grid").replaceChildren(...movies.map(rateCard));
+      $("more").hidden = true;
+    } catch (err) {
+      console.error(err);
+    }
   }, 250);
 }
 
@@ -103,7 +108,9 @@ function updateBar() {
     : `Rated ${n} movies`;
 }
 
+let recsRequest = 0;
 async function loadRecs() {
+  const request = ++recsRequest; // a slower, older request must not overwrite a newer one
   const n = Object.keys(ratings).length;
   if (n < MIN_RATINGS) {
     $("recs-status").textContent = `Rate ${MIN_RATINGS - n} more movie${MIN_RATINGS - n === 1 ? "" : "s"} to unlock recommendations.`;
@@ -112,6 +119,7 @@ async function loadRecs() {
   }
   $("recs-status").textContent = "Finding movies for you…";
   const recs = await Rec.recommend(ratings, 40, $("rec-genre").value || null);
+  if (request !== recsRequest) return;
   if (!recs.length) {
     $("recs-status").textContent = "Rate a few movies you liked (4 or 5 stars) so the model knows your taste.";
     $("rec-grid").replaceChildren();
@@ -125,8 +133,13 @@ async function showSimilar(movie) {
   $("similar-title").textContent = `Because you're looking at ${movie.title}`;
   $("similar-grid").replaceChildren();
   $("similar").showModal();
-  const movies = await Rec.similar(movie.id, 12);
-  $("similar-grid").replaceChildren(...movies.map(rateCard));
+  try {
+    const movies = await Rec.similar(movie.id, 12);
+    $("similar-grid").replaceChildren(...movies.map(rateCard));
+  } catch (err) {
+    console.error(err);
+    $("similar-grid").replaceChildren(el("p", { class: "lede" }, "Couldn't load similar movies. Try again."));
+  }
 }
 
 function show(view) {
@@ -150,11 +163,11 @@ for (const select of [$("genre-filter"), $("rec-genre")]) {
 }
 document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => show(t.dataset.view)));
 $("go").addEventListener("click", () => show("recs"));
-$("more").addEventListener("click", () => loadRateGrid(false));
+$("more").addEventListener("click", () => loadRateGrid(false).catch(console.error));
 $("search").addEventListener("input", onSearch);
-$("genre-filter").addEventListener("change", () => { $("search").value = ""; loadRateGrid(true); });
+$("genre-filter").addEventListener("change", () => { $("search").value = ""; loadRateGrid(true).catch(console.error); });
 $("rec-genre").addEventListener("change", () => loadRecs().catch(fail));
-$("reset").addEventListener("click", () => { ratings = {}; store.save(ratings); updateBar(); show("rate"); loadRateGrid(true); });
+$("reset").addEventListener("click", () => { ratings = {}; store.save(ratings); updateBar(); show("rate"); loadRateGrid(true).catch(console.error); });
 $("close-similar").addEventListener("click", () => $("similar").close());
 
 updateBar();
