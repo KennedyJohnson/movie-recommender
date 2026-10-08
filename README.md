@@ -89,3 +89,11 @@ This project uses the [MovieLens](https://grouplens.org/datasets/movielens/) dat
 Movie posters are provided by [TMDB](https://www.themoviedb.org/). This product uses the TMDB API but is not endorsed or certified by TMDB.
 
 <img src="docs/tmdb-logo.svg" alt="TMDB logo" height="14">
+
+## Tools used
+
+- Python
+- NumPy / numba
+- EASE
+- FastAPI
+- JavaScript
