@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from recsys import data
@@ -90,6 +91,7 @@ def main(kind="svdf", name="ml-latest", min_ratings="100"):
             "year": int(match.group(2)) if match else None,
             "genres": [] if row["genres"] == "(no genres listed)" else row["genres"].split("|"),
             "tmdb": tmdb,
+            "imdb": None if pd.isna(row["imdbId"]) else f"tt{int(row['imdbId']):07d}",
             "poster": posters[str(tmdb)],
             "n": int(counts[idx]),
             "avg": round(float(means[idx]), 2),

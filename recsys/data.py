@@ -38,7 +38,7 @@ def load(name="ml-latest", min_item_ratings=20, min_user_ratings=20) -> Ratings:
 
 def movies(name="ml-latest") -> pd.DataFrame:
     m = pd.read_parquet(DATA / name / "movies.parquet")
-    links = pd.read_parquet(DATA / name / "links.parquet")[["movieId", "tmdbId"]]
+    links = pd.read_parquet(DATA / name / "links.parquet")[["movieId", "tmdbId", "imdbId"]]
     return m.merge(links, on="movieId", how="left")
 
 

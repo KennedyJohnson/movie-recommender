@@ -46,10 +46,15 @@ function starRow(movie, card, onRate) {
   return row;
 }
 
+function titleLink(movie) {
+  if (!movie.imdb) return movie.title;
+  return el("a", { href: `https://www.imdb.com/title/${movie.imdb}/`, target: "_blank", rel: "noopener noreferrer", title: "Open on IMDb" }, movie.title);
+}
+
 function rateCard(movie) {
   const card = el("article", { class: "card" + (movie.id in ratings ? " rated" : "") });
   card.append(poster(movie), el("div", { class: "meta" },
-    el("div", { class: "title" }, movie.title),
+    el("div", { class: "title" }, titleLink(movie)),
     el("div", { class: "sub" }, [movie.year, movie.genres.slice(0, 2).join(", ")].filter(Boolean).join(" · ")),
     starRow(movie, card)));
   return card;
@@ -73,7 +78,7 @@ function recCard(movie, i) {
   stars.hidden = true;
   const seen = el("button", { class: "link", onclick: () => { stars.hidden = false; seen.hidden = true; } }, "Seen it? Rate it");
   card.append(el("span", { class: "rank", "aria-hidden": "true" }, i + 1), poster(movie), el("div", { class: "meta" },
-    el("div", { class: "title" }, movie.title),
+    el("div", { class: "title" }, titleLink(movie)),
     el("div", { class: "sub" }, [movie.year, movie.genres.slice(0, 2).join(", ")].filter(Boolean).join(" · ")),
     movie.because?.length ? becauseLine(movie.because) : null,
     movie.predicted != null ? el("div", { class: "sub" }, "You'd rate it ", el("span", { class: "predicted" }, `★ ${movie.predicted.toFixed(1)}`)) : null,
