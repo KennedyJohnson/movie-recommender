@@ -86,7 +86,7 @@ class Recommender:
             if self.kind not in ("als", "ease"):
                 item["predicted"] = round(float(np.clip(self.mu + bu + scores[i], 0.5, 5.0)), 2)
             if i in because:
-                item["because"] = self.movies[because[i]]["title"]
+                item["because"] = [self.movies[r]["title"] for r in because[i]]
             out.append(item)
         return out
 
@@ -98,17 +98,20 @@ class Recommender:
         vals = np.concatenate([self.B_data[s] * w for s, w in zip(sl, weights)])
         return np.bincount(cols, weights=vals, minlength=len(self.movies))
 
-    def _because(self, rows, weights, targets):
-        """For each target, the rated movie whose weighted row pushed it up the most (positive pushes only)."""
-        best = {}
+    def _because(self, rows, weights, targets, k=2):
+        """For each target, the k rated movies whose weighted rows pushed it up the most (positive pushes only)."""
+        best = {}  # target -> [(push, rated movie row), ...] sorted high to low, at most k entries
         targets = set(int(t) for t in targets)
         for r, w in zip(rows, weights):
             s = slice(self.B_indptr[r], self.B_indptr[r + 1])
             for t, v in zip(self.B_indices[s], self.B_data[s] * w):
                 t = int(t)
-                if t in targets and v > 0 and v > best.get(t, (0.0, -1))[0]:
-                    best[t] = (float(v), int(r))
-        return {t: r for t, (_, r) in best.items()}
+                if t in targets and v > 0:
+                    lst = best.setdefault(t, [])
+                    lst.append((float(v), int(r)))
+                    lst.sort(reverse=True)
+                    del lst[k:]
+        return {t: [r for _, r in lst] for t, lst in best.items()}
 
     def similar(self, movie_id: int, n=12):
         i = self.index[movie_id]

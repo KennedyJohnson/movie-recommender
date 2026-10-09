@@ -25,6 +25,13 @@
     <section id="view-rate">
       <p class="lede">Rate at least <strong>5 movies</strong> you've seen. The model solves for your taste
         profile on the fly and ranks over 12,000 movies for you.</p>
+      <details id="import" class="import">
+        <summary>Import ratings from Letterboxd</summary>
+        <p class="sub">In Letterboxd, export your data from settings, then choose the <code>ratings.csv</code> file from the zip.
+          It is read in your browser and never uploaded. Your half-star ratings map to 1 to 5 stars.</p>
+        <input id="lb-file" type="file" accept=".csv,text/csv" aria-label="Letterboxd ratings.csv">
+        <p id="import-status" class="sub" role="status"></p>
+      </details>
       <div class="controls">
         <input id="search" type="search" placeholder="Search for a movie…" autocomplete="off">
         <select id="genre-filter" aria-label="Filter by genre"><option value="">All genres</option></select>
@@ -34,12 +41,16 @@
     </section>
 
     <section id="view-recs" hidden>
-      <div class="controls">
+      <div class="controls filters">
         <select id="rec-genre" aria-label="Filter recommendations by genre"><option value="">All genres</option></select>
+        <input id="year-min" type="number" inputmode="numeric" min="1800" max="2100" placeholder="From year" aria-label="Earliest release year">
+        <input id="year-max" type="number" inputmode="numeric" min="1800" max="2100" placeholder="To year" aria-label="Latest release year">
+        <label class="check"><input id="hide-rated" type="checkbox" checked> Hide movies I've rated</label>
         <button id="reset" class="ghost">Clear my ratings</button>
       </div>
       <p id="recs-status" class="lede"></p>
       <ol id="rec-grid" class="grid ranked"></ol>
+      <button id="recs-more" class="ghost" hidden>Show more</button>
     </section>
 
     <section id="view-methods" class="prose" hidden>
@@ -79,7 +90,7 @@
             <tr><td>PMF</td><td>0.797</td><td>0.037</td><td>0.028</td><td>0.045</td></tr>
             <tr><td>Implicit ALS (default settings)</td><td>n/a</td><td>0.227</td><td>0.225</td><td>0.302</td></tr>
             <tr><td>Implicit ALS (tuned)</td><td>n/a</td><td>0.271</td><td>0.255</td><td>0.363</td></tr>
-            <tr class="win-rank"><td>EASE &mdash; used on this site</td><td>n/a</td><td><strong>0.306</strong></td><td><strong>0.276</strong></td><td><strong>0.408</strong></td></tr>
+            <tr class="win-rank"><td>EASE (used on this site)</td><td>n/a</td><td><strong>0.306</strong></td><td><strong>0.276</strong></td><td><strong>0.408</strong></td></tr>
             <tr><td>BPR</td><td>n/a</td><td>0.172</td><td>0.160</td><td>0.221</td></tr>
           </tbody>
         </table>

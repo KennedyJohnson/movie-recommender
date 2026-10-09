@@ -35,11 +35,13 @@ const Rec = (() => {
   const NEUTRAL = 3; // star rating that neither pulls similar movies up nor pushes them down
 
   // EASE score = weighted sum of the given movies' weight rows.
-  // Also tracks which given movie pushed each target up the most, for "Because you liked" labels.
+  // Also tracks the two given movies that pushed each target up the most (positive pushes only),
+  // for "Because you rated X and Y" labels. scores.because = [firstIds, secondIds], -1 when unset.
   async function scoreRows(rows, weights) {
-    const scores = new Float64Array(movies.length);
-    const bestPush = new Float64Array(movies.length);
-    const because = new Int32Array(movies.length).fill(-1);
+    const n = movies.length;
+    const scores = new Float64Array(n);
+    const v1 = new Float64Array(n), v2 = new Float64Array(n);
+    const id1 = new Int32Array(n).fill(-1), id2 = new Int32Array(n).fill(-1);
     await Promise.all(rows.map(async (i, j) => {
       const w = weights ? weights[j] : 1;
       const sh = await shard(Math.floor(i / meta.shard));
@@ -47,10 +49,13 @@ const Rec = (() => {
       for (let k = sh.indptr[r]; k < sh.indptr[r + 1]; k++) {
         const t = sh.indices[k], push = w * sh.data[k];
         scores[t] += push;
-        if (push > bestPush[t]) { bestPush[t] = push; because[t] = i; }
+        if (push > 0) {
+          if (push > v1[t]) { v2[t] = v1[t]; id2[t] = id1[t]; v1[t] = push; id1[t] = i; }
+          else if (push > v2[t]) { v2[t] = push; id2[t] = i; }
+        }
       }
     }));
-    scores.because = because;
+    scores.because = [id1, id2];
     return scores;
   }
 
@@ -71,18 +76,21 @@ const Rec = (() => {
         .sort((a, b) => (!a.title.toLowerCase().startsWith(q)) - (!b.title.toLowerCase().startsWith(q)) || b.n - a.n)
         .slice(0, n);
     },
-    async recommend(rated, n, genre) {
+    // Returns the full ranking (best first) so the caller can filter client side.
+    // Already-rated movies stay in the list with a score; the caller decides whether to hide them.
+    // Each item gets `because`: up to two rated titles that pushed it up the most.
+    async recommend(rated, n = Infinity) {
       await init();
       const known = Object.entries(rated).map(([id, r]) => [index.get(+id), r]).filter(([i]) => i !== undefined);
-      if (!known.length) return this.popular(n, genre, 0);
+      if (!known.length) return this.popular(n, null, 0);
       if (!known.some(([, r]) => r >= meta.min_rating)) return [];
       // weight each rated movie by (stars - 3)^3: 4/2 stars nudge similar movies (+/-1), 5/1 stars move them hard (+/-8)
       const used = known.filter(([, r]) => r !== NEUTRAL);
       const scores = await scoreRows(used.map(([i]) => i), used.map(([, r]) => (r - NEUTRAL) ** 3));
-      for (const [i] of known) scores[i] = -Infinity;
-      return top(scores, n, (i) => !genre || movies[i].genres.includes(genre)).map((i) => {
-        const b = scores.because[i];
-        return b >= 0 ? { ...movies[i], because: movies[b].title } : movies[i];
+      const [first, second] = scores.because;
+      return top(scores, n, () => true).map((i) => {
+        const because = [first[i], second[i]].filter((b) => b >= 0).map((b) => movies[b].title);
+        return { ...movies[i], because };
       });
     },
     async similar(id, n) {
@@ -93,5 +101,6 @@ const Rec = (() => {
       return top(sims, n, () => true).map((j) => ({ ...movies[j], similarity: Math.round(sims[j] * 1000) / 1000 }));
     },
     async updated() { await init(); return meta.updated; },
+    async catalog() { await init(); return movies; },
   };
 })();
