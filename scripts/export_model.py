@@ -23,6 +23,7 @@ POSTERS = data.DATA / "posters.json"  # from scripts/fetch_posters.py
 KINDS = {"svdf": (FunkSVD, "SVDF (Funk SVD)"), "pmf": (PMF, "PMF"), "als": (ImplicitALS, "Implicit ALS (tuned)"),
          "ease": (EASE, "EASE")}
 EASE_TOPK = 200  # neighbours kept per movie: ~19 MB instead of 576 MB, nDCG@10 0.408 -> 0.393
+EASE_POP_BETA = 0.175  # popularity debias: served coverage 9.3% -> 13.8%, nDCG@10 0.3927 -> 0.3885
 
 
 def readable_title(title):
@@ -38,7 +39,7 @@ def main(kind="svdf", name="ml-latest", min_ratings="100"):
     print(f"Training {label} on {len(r.ratings):,} ratings")
     params = MODELS[label][1]
     if kind == "ease":
-        params = {**params, "topk": EASE_TOPK}
+        params = {**params, "topk": EASE_TOPK, "pop_beta": EASE_POP_BETA}
     model = cls(**params).fit(r.users, r.items, r.ratings, r.n_users, r.n_items)
 
     counts = np.bincount(r.items, minlength=r.n_items)

@@ -40,6 +40,7 @@ Settings were chosen on a validation split carved out of the training data ([scr
 | 3. Stronger regularization (λ 0.1 → 5), and down-weight popular movies by (count / mean)^-0.25 | 0.240 | 0.363 |
 | 4. Switch to EASE, trained on ratings of 3.5★ or more | 0.260 | 0.408 |
 | 5. Prune EASE to 200 weights per movie so it fits free hosting (576 MB → 19 MB) | | **0.393** |
+| 6. Down-weight popular movies in the served EASE model (`pop_beta` 0.175): catalog coverage 9.3% → 13.8% | | 0.389 |
 
 **What didn't help:** more latent factors (128 factors: 0.212, 200 factors: 0.196; both overfit), more conjugate-gradient steps (no change), and BPR ([Rendle et al., 2009](https://arxiv.org/abs/1205.2618)), which scored 0.221 on test.
 
