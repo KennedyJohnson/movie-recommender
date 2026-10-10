@@ -1,0 +1,128 @@
+[
+  {
+    "topk": "none",
+    "pop_beta": 0.0,
+    "ndcg@10": 0.4079,
+    "coverage": 0.0944,
+    "precision@10": 0.306,
+    "recall@10": 0.2763,
+    "seconds": 94.3
+  },
+  {
+    "topk": "none",
+    "pop_beta": 0.1,
+    "ndcg@10": 0.4073,
+    "coverage": 0.1211,
+    "precision@10": 0.3062,
+    "recall@10": 0.2783,
+    "seconds": 90.7
+  },
+  {
+    "topk": "none",
+    "pop_beta": 0.15,
+    "ndcg@10": 0.4033,
+    "coverage": 0.1371,
+    "precision@10": 0.3032,
+    "recall@10": 0.2772,
+    "seconds": 87.7
+  },
+  {
+    "topk": "none",
+    "pop_beta": 0.175,
+    "ndcg@10": 0.4,
+    "coverage": 0.146,
+    "precision@10": 0.3006,
+    "recall@10": 0.2758,
+    "seconds": 85.1
+  },
+  {
+    "topk": "none",
+    "pop_beta": 0.2,
+    "ndcg@10": 0.3959,
+    "coverage": 0.1566,
+    "precision@10": 0.2977,
+    "recall@10": 0.274,
+    "seconds": 84.6
+  },
+  {
+    "topk": "none",
+    "pop_beta": 0.25,
+    "ndcg@10": 0.3844,
+    "coverage": 0.1783,
+    "precision@10": 0.2895,
+    "recall@10": 0.2686,
+    "seconds": 84.4
+  },
+  {
+    "topk": "none",
+    "pop_beta": 0.3,
+    "ndcg@10": 0.3692,
+    "coverage": 0.2048,
+    "precision@10": 0.2783,
+    "recall@10": 0.261,
+    "seconds": 83.1
+  },
+  {
+    "topk": 200,
+    "pop_beta": 0.0,
+    "ndcg@10": 0.3927,
+    "coverage": 0.0927,
+    "precision@10": 0.2938,
+    "recall@10": 0.2658,
+    "seconds": 71.2
+  },
+  {
+    "topk": 200,
+    "pop_beta": 0.1,
+    "ndcg@10": 0.394,
+    "coverage": 0.1165,
+    "precision@10": 0.2952,
+    "recall@10": 0.2669,
+    "seconds": 71.0
+  },
+  {
+    "topk": 200,
+    "pop_beta": 0.15,
+    "ndcg@10": 0.3909,
+    "coverage": 0.1305,
+    "precision@10": 0.2932,
+    "recall@10": 0.2658,
+    "seconds": 71.9
+  },
+  {
+    "topk": 200,
+    "pop_beta": 0.175,
+    "ndcg@10": 0.3885,
+    "coverage": 0.1384,
+    "precision@10": 0.2914,
+    "recall@10": 0.2648,
+    "seconds": 87.7
+  },
+  {
+    "topk": 200,
+    "pop_beta": 0.2,
+    "ndcg@10": 0.3848,
+    "coverage": 0.148,
+    "precision@10": 0.2891,
+    "recall@10": 0.2629,
+    "seconds": 102.0
+  },
+  {
+    "topk": 200,
+    "pop_beta": 0.25,
+    "ndcg@10": 0.3739,
+    "coverage": 0.1684,
+    "precision@10": 0.2813,
+    "recall@10": 0.2577,
+    "seconds": 96.5
+  },
+  {
+    "topk": 200,
+    "pop_beta": 0.3,
+    "ndcg@10": 0.3592,
+    "coverage": 0.1917,
+    "precision@10": 0.2705,
+    "recall@10": 0.2509,
+    "seconds": 89.6
+  }
+]
