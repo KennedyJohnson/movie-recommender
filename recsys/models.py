@@ -185,8 +185,9 @@ class EASE:
     P = (X'X + reg I)^-1. The dense item Gram matrix is items^2, so only the
     `max_items` most-interacted movies are modelled; the rest score -inf."""
 
-    def __init__(self, reg=500.0, max_items=12_000, min_rating=None, topk=None):
+    def __init__(self, reg=500.0, max_items=12_000, min_rating=None, topk=None, pop_beta=0.0):
         self.reg, self.max_items, self.min_rating, self.topk = reg, max_items, min_rating, topk
+        self.pop_beta = pop_beta
 
     def fit(self, users, items, ratings, n_users, n_items, verbose=True):
         if self.min_rating is not None:
@@ -206,6 +207,11 @@ class EASE:
         P = np.linalg.inv(G)
         B = P / -np.diag(P)
         B[np.diag_indices_from(B)] = 0.0
+        if self.pop_beta:  # damp popular movies' scores: scaling column j of B by d_j scales movie j's score
+            cnt = np.asarray(X.sum(axis=0)).ravel()
+            d = np.ones(len(cnt))
+            d[cnt > 0] = (cnt[cnt > 0] / cnt[cnt > 0].mean()) ** -self.pop_beta
+            B = B * d[None, :]
         B = B.astype(np.float32)
         self.B = prune_topk(B, self.topk) if self.topk else B
         self.X, self.n_items = X, n_items
