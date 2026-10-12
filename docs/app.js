@@ -87,10 +87,17 @@ function recCard(movie, i) {
   return card;
 }
 
+// Random mode shuffles the 3,000 most-rated movies (per genre), so the picks are varied but still ones people have seen.
+const RANDOM_POOL = 3000;
+let pool;
 async function loadRateGrid(reset) {
-  if (reset) { offset = 0; $("rate-grid").replaceChildren(); }
-  const genre = $("genre-filter").value;
-  const movies = await Rec.popular(40, genre, offset);
+  if (reset) { offset = 0; pool = null; $("rate-grid").replaceChildren(); }
+  if (!pool) {
+    const random = $("sort").value === "random";
+    pool = await Rec.popular(random ? RANDOM_POOL : Infinity, $("genre-filter").value, 0);
+    if (random) for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+  }
+  const movies = pool.slice(offset, offset + 40);
   offset += movies.length;
   $("rate-grid").append(...movies.map(rateCard));
   $("more").hidden = movies.length < 40;
@@ -282,7 +289,7 @@ document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () 
 $("go").addEventListener("click", () => show("recs"));
 $("more").addEventListener("click", () => loadRateGrid(false).catch(console.error));
 $("search").addEventListener("input", onSearch);
-$("genre-filter").addEventListener("change", () => { $("search").value = ""; loadRateGrid(true).catch(console.error); });
+for (const id of ["genre-filter", "sort"]) $(id).addEventListener("change", () => { $("search").value = ""; loadRateGrid(true).catch(console.error); });
 for (const id of ["rec-genre", "year-min", "year-max", "hide-rated"]) {
   $(id).addEventListener("input", () => { recsLimit = 40; renderRecs(); });
   $(id).addEventListener("change", () => { recsLimit = 40; renderRecs(); });
