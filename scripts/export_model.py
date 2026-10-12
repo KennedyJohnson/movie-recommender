@@ -1,4 +1,4 @@
-"""Train the deployed model on all ratings and export small artifacts for the API.
+"""Train the deployed model on all ratings and export small artifacts for the static exporter.
 
 Only movies with at least `min_ratings` ratings are exported, which keeps the artifacts
 a few MB and keeps obscure titles with noisy factors out of recommendations.
@@ -18,7 +18,7 @@ from recsys import data
 from recsys.models import EASE, PMF, FunkSVD, ImplicitALS
 from scripts.evaluate import MODELS
 
-OUT = Path(__file__).resolve().parents[1] / "api" / "artifacts"
+OUT = Path(__file__).resolve().parents[1] / "artifacts"
 POSTERS = data.DATA / "posters.json"  # from scripts/fetch_posters.py
 KINDS = {"svdf": (FunkSVD, "SVDF (Funk SVD)"), "pmf": (PMF, "PMF"), "als": (ImplicitALS, "Implicit ALS (tuned)"),
          "ease": (EASE, "EASE")}

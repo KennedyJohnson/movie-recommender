@@ -1,4 +1,4 @@
-// In-browser port of api/recommender.py (EASE only). Data comes from scripts/export_static.py.
+// In-browser EASE recommender. Data comes from scripts/export_static.py.
 const Rec = (() => {
   const shards = new Map();
   let movies, index, meta;

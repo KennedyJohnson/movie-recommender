@@ -1,4 +1,4 @@
-"""Convert api/artifacts (EASE) into static files so the site runs on GitHub Pages with no server.
+"""Convert artifacts/ (EASE) into static files so the site runs on GitHub Pages with no server.
 
 EASE scores = sum of the liked movies' weight rows, so the browser only needs the rows for the
 movies a visitor rated. Rows are split into shards of SHARD rows; each shard is one small binary:
@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-ART, OUT = ROOT / "api" / "artifacts", ROOT / "docs" / "data"
+ART, OUT = ROOT / "artifacts", ROOT / "docs" / "data"
 SHARD = 100
 
 m = np.load(ART / "model.npz")

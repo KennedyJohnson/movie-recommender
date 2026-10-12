@@ -56,21 +56,20 @@ Keeping only the 50, 100, 200 or 500 strongest weights per movie gives test nDCG
 
 - **Training** ([recsys/models.py](recsys/models.py)): SVDF, PMF, implicit ALS, BPR and EASE are implemented from scratch with numpy and numba. SVDF, PMF and BPR use SGD, implicit ALS uses a conjugate-gradient solver, and EASE is solved in closed form. Training on the full 32M filtered ratings takes about 3 minutes per model on a desktop CPU.
 - **New users:** visitors aren't in the training data, and EASE doesn't need them to be. A visitor's scores are the sum of the weight rows for the movies they rated 3.5★ or more, which takes under a millisecond with no retraining ([api/recommender.py](api/recommender.py)). Each recommendation is labelled "Because you liked X", where X is the rated movie whose weighted row added the most to its score. EASE is a sum over rated movies, so that attribution is exact rather than a post-hoc explanation. The API can still serve ALS, SVDF or PMF (`export_model.py als|svdf|pmf`).
-- **Serving:** only the pruned EASE weights are exported (12 MB compressed). The export covers the 12,087 movies that have at least 100 ratings and a TMDB poster. A FastAPI service ([api/main.py](api/main.py)) serves them to a static frontend ([docs/](docs/)).
+- **Serving:** only the pruned EASE weights are exported (12 MB compressed). The export covers the 12,087 movies that have at least 100 ratings and a TMDB poster. They are served as static shards to the frontend ([docs/](docs/)); there is no backend.
 
 ## Run it locally
 
 ```bash
 python -m venv .venv && .venv/Scripts/activate        # macOS/Linux: source .venv/bin/activate
-pip install -r requirements.txt -r api/requirements.txt
+pip install -r requirements.txt
 
 python scripts/download_data.py                       # ml-latest from GroupLens (~1 GB unzipped)
 python scripts/evaluate.py                            # model comparison -> results/
 TMDB_API_KEY=... python scripts/fetch_posters.py      # poster paths from TMDB (free key)
-python scripts/export_model.py ease                   # train + export -> api/artifacts/
-python scripts/export_static.py                       # api/artifacts -> docs/data/ (browser model)
+python scripts/export_model.py ease                   # train + export -> artifacts/
+python scripts/export_static.py                       # artifacts -> docs/data/ (browser model)
 
-cd api && uvicorn main:app --port 8000                # API
 cd docs && python -m http.server 5500                 # site at http://localhost:5500
 ```
 
@@ -78,7 +77,6 @@ cd docs && python -m http.server 5500                 # site at http://localhost
 
 - **Frontend:** GitHub Pages, served from `main` / `docs`.
 - **Model:** runs in the browser. `scripts/export_static.py` splits EASE's item weights into small binary shards under `docs/data/ease/`, and the page fetches only the rows for movies you rated, so there's no server to wake up.
-- **API (optional):** the FastAPI service in `api/` serves the same model and is kept for local development.
 - **Refresh:** `.github/workflows/refresh.yml` checks GroupLens monthly and retrains when a new ml-latest is published.
 
 ## Data and attribution
@@ -96,5 +94,4 @@ Movie posters are provided by [TMDB](https://www.themoviedb.org/). This product 
 - Python
 - NumPy / numba
 - EASE
-- FastAPI
 - JavaScript

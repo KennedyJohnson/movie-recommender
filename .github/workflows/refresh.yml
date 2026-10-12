@@ -69,7 +69,7 @@ jobs:
           echo "{\"updated\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\", \"retrained\": ${{ steps.check.outputs.run == 'true' }}}" > docs/data/last_updated.json
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/data api/artifacts
+          git add docs/data
           git diff --staged --quiet || git commit -m "chore: monthly model refresh [automated]"
           git push
           # GITHUB_TOKEN pushes may not trigger a Pages build; request one explicitly.
