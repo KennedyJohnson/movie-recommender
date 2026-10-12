@@ -78,7 +78,7 @@ cd docs && python -m http.server 5500                 # site at http://localhost
 
 - **Frontend:** GitHub Pages, served from `main` / `docs`.
 - **Model:** runs in the browser. `scripts/export_static.py` splits EASE's item weights into small binary shards under `docs/data/ease/`, and the page fetches only the rows for movies you rated, so there's no server to wake up.
-- **API (optional):** the FastAPI service in `api/` (Render config in [render.yaml](render.yaml)) serves the same model and is kept for local development.
+- **API (optional):** the FastAPI service in `api/` serves the same model and is kept for local development.
 - **Refresh:** `.github/workflows/refresh.yml` checks GroupLens monthly and retrains when a new ml-latest is published.
 
 ## Data and attribution
