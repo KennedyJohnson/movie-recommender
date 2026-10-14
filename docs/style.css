@@ -120,3 +120,37 @@ th { font-weight: 600; color: var(--muted); font-size: 12px; }
 
 .title a { color: inherit; text-decoration: none; }
 .title a:hover { color: var(--accent); text-decoration: underline; }
+
+/* Field Documents theme: repertory theater program. Oxblood house, brass ink, ticket-stub cards. One look in both OS themes. */
+:root, :root:not([data-theme="light"]) {
+  color-scheme: dark;
+  --bg: #1a0f0d; --surface: #241512; --text: #f1e4c8; --muted: #b39b7c; --border: #4a2e24;
+  --accent: #d39a4a; --accent-text: #1a0f0d; --star: #e6b35a; --star-off: #5a3c30; --shadow: none;
+  --display: "Bodoni Moda", Didot, Georgia, serif; --stub: "Chivo Mono", ui-monospace, monospace;
+}
+body { font-family: "IBM Plex Sans", system-ui, sans-serif; }
+.top { background: var(--bg); border-bottom: 3px double var(--accent); }
+h1 { font-family: var(--display); font-weight: 700; font-size: 22px; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); }
+.tab { font-family: var(--stub); text-transform: uppercase; letter-spacing: .08em; font-size: 13px; border-radius: 0; }
+.tab.active { background: none; color: var(--text); box-shadow: inset 0 -2px 0 var(--accent); }
+.pill { border-radius: 0; font-family: var(--stub); }
+.lede { color: var(--muted); font-style: italic; }
+.prose h2, .prose h3, .dialog-head h2 { font-family: var(--display); }
+input[type="search"], select, .filters input[type="number"], .ghost, .primary { border-radius: 0; }
+.ghost, .primary { font-family: var(--stub); text-transform: uppercase; letter-spacing: .06em; font-size: 13px; }
+/* Ticket stub: dashed perforation between poster and details, notched corners. */
+.card { border-radius: 0; border: 1px solid var(--border); }
+.meta { border-top: 1px dashed var(--accent); }
+.title { font-family: var(--display); font-weight: 700; font-size: 15px; }
+.sub { font-family: var(--stub); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+.card.rated { outline-color: var(--accent); }
+.rank { border-radius: 0; background: var(--accent); color: var(--accent-text); font-family: var(--stub); }
+.bar { background: var(--surface); border-top: 1px dashed var(--accent); }
+.table-wrap { border-radius: 0; }
+th { font-family: var(--stub); text-transform: uppercase; }
+dialog { border-radius: 0; border: 1px solid var(--accent); }
+.byline { font-family: var(--display); font-style: italic; font-size: 14px; color: var(--accent); }
+@media (max-width: 480px) {
+  h1 { font-size: 16px; letter-spacing: .04em; }
+  .tab { padding: 8px 6px; font-size: 11px; letter-spacing: .02em; }
+}
