@@ -112,7 +112,8 @@ function onSearch() {
       if (q.length < 2) return await loadRateGrid(true);
       const movies = await Rec.search(q, 24);
       if ($("search").value.trim() !== q) return; // the user kept typing
-      $("rate-grid").replaceChildren(...movies.map(rateCard));
+      $("rate-grid").replaceChildren(...(movies.length ? movies.map(rateCard)
+        : [el("p", { class: "empty" }, `No movies match “${q}”. Try another title.`)]));
       $("more").hidden = true;
     } catch (err) {
       console.error(err);
